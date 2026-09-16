@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789580236400,
+      "tag": "0000_workspace_core",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789580692362,
+      "tag": "0001_generate_reminders",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789580719725,
+      "tag": "0002_enable_pg_cron",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789580974673,
+      "tag": "0003_seed_workspace",
+      "breakpoints": true
+    }
+  ]
+}
