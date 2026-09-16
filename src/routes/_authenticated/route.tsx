@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/app-shell";
+import { CompanyGate } from "@/components/company-gate";
 import { ProjectsProvider } from "@/components/projects/projects-store";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,9 +18,11 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   return (
     <ProjectsProvider>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <CompanyGate>
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </CompanyGate>
     </ProjectsProvider>
   );
 }

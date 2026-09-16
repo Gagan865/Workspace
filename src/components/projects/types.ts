@@ -34,11 +34,20 @@ export type PersonColorId =
   | "p12";
 
 export type Member = {
-  id: string;
+  id: string; // company_members.id — also the task assignee id
+  userId: string; // the person's auth user id
   name: string;
   email: string;
   title: string;
   role: TeamRole;
+  colorId: PersonColorId;
+};
+
+export type Invite = {
+  id: string;
+  email: string;
+  role: TeamRole;
+  title: string;
   colorId: PersonColorId;
 };
 
@@ -105,146 +114,6 @@ export const defaultStages = (): Stage[] => [
   { id: "todo", label: "To Do" },
   { id: "doing", label: "In Progress" },
   { id: "done", label: "Done" },
-];
-
-export type SeedMember = Omit<Member, "id">;
-
-export const SEED_MEMBERS: SeedMember[] = [
-  {
-    name: "Riya Sharma",
-    email: "riya@company.com",
-    title: "Ops Lead",
-    role: "manager",
-    colorId: "p8",
-  },
-  {
-    name: "Adam Moore",
-    email: "adam@company.com",
-    title: "Designer",
-    role: "contributor",
-    colorId: "p3",
-  },
-  {
-    name: "Jo Kim",
-    email: "jo@company.com",
-    title: "People Partner",
-    role: "manager",
-    colorId: "p5",
-  },
-  {
-    name: "Dana Nkosi",
-    email: "dana@company.com",
-    title: "Product",
-    role: "owner",
-    colorId: "p11",
-  },
-];
-
-export type SeedTask = {
-  title: string;
-  description: string;
-  tag: string;
-  memberIndex: number;
-  stageIndex: number;
-  due: string;
-  priority: Priority;
-  logged: number;
-  remaining: number;
-};
-
-export const SEED_PROJECTS: { name: string; tasks: SeedTask[] }[] = [
-  {
-    name: "Warehouse Revamp",
-    tasks: [
-      {
-        title: "Vendor consolidation study",
-        description: "Compare the three shortlisted suppliers on cost and lead time.",
-        tag: "Ops",
-        memberIndex: 0,
-        stageIndex: 0,
-        due: "2026-10-02",
-        priority: "medium",
-        logged: 3,
-        remaining: 9,
-      },
-      {
-        title: "Warehouse dashboard v2",
-        description: "Live stock levels with alerts for low-inventory SKUs.",
-        tag: "Product",
-        memberIndex: 3,
-        stageIndex: 2,
-        due: "2026-09-19",
-        priority: "high",
-        logged: 14,
-        remaining: 6,
-      },
-      {
-        title: "Annual security review",
-        description: "Access audit across all internal tools and shared drives.",
-        tag: "IT",
-        memberIndex: 0,
-        stageIndex: 2,
-        due: "2026-09-22",
-        priority: "medium",
-        logged: 8,
-        remaining: 4,
-      },
-    ],
-  },
-  {
-    name: "Brand Refresh",
-    tasks: [
-      {
-        title: "Brand refresh guidelines",
-        description: "Document logo usage, colour and type for the new identity.",
-        tag: "Brand",
-        memberIndex: 1,
-        stageIndex: 0,
-        due: "2026-10-09",
-        priority: "low",
-        logged: 0,
-        remaining: 16,
-      },
-      {
-        title: "Customer onboarding audit",
-        description: "Walk the first-week journey and log every friction point.",
-        tag: "Growth",
-        memberIndex: 1,
-        stageIndex: 1,
-        due: "2026-09-29",
-        priority: "medium",
-        logged: 2,
-        remaining: 10,
-      },
-    ],
-  },
-  {
-    name: "Q4 Hiring",
-    tasks: [
-      {
-        title: "Q4 hiring plan",
-        description: "Headcount, levels and budget for two new squads.",
-        tag: "People",
-        memberIndex: 2,
-        stageIndex: 1,
-        due: "2026-09-24",
-        priority: "high",
-        logged: 4,
-        remaining: 6,
-      },
-      {
-        title: "Partner contract renewal",
-        description: "Signed and filed with legal.",
-        tag: "Legal",
-        memberIndex: 2,
-        stageIndex: 3,
-        due: "2026-09-12",
-        priority: "low",
-        logged: 6,
-        remaining: 0,
-      },
-    ],
-  },
 ];
 
 export const formatDue = (value: string) => {

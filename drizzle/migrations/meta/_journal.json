@@ -29,6 +29,27 @@
       "when": 1789580974673,
       "tag": "0003_seed_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789581000000,
+      "tag": "0004_team_workspaces",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789581100000,
+      "tag": "0005_profile_directory",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789581200000,
+      "tag": "0006_planner_content",
+      "breakpoints": true
     }
   ]
 }

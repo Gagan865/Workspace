@@ -18,8 +18,7 @@ import {
   PERSON_COLORS,
   ROLES,
   personVars,
-  uid,
-  type Member,
+  type Invite,
   type PersonColorId,
   type TeamRole,
 } from "./types";
@@ -27,15 +26,19 @@ import {
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (member: Member) => void;
+  onInvite: (invite: Omit<Invite, "id">) => void;
   suggestedColorId: PersonColorId;
 };
 
 const STEPS = ["Person", "Access", "Review"];
 
-export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }: Props) {
+const nameFromEmail = (email: string) => {
+  const local = email.split("@")[0] ?? "";
+  return local.replace(/[._-]+/g, " ").trim() || "New teammate";
+};
+
+export function OnboardingDialog({ open, onOpenChange, onInvite, suggestedColorId }: Props) {
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [title, setTitle] = useState("");
   const [role, setRole] = useState<TeamRole>("contributor");
@@ -44,7 +47,6 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
   useEffect(() => {
     if (open) {
       setStep(0);
-      setName("");
       setEmail("");
       setTitle("");
       setRole("contributor");
@@ -52,12 +54,11 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
     }
   }, [open, suggestedColorId]);
 
-  const canContinue = step !== 0 || (name.trim().length > 1 && email.includes("@"));
+  const previewName = email ? nameFromEmail(email) : "New teammate";
+  const canContinue = step !== 0 || email.includes("@");
 
   const finish = () => {
-    onAdd({
-      id: uid("member"),
-      name: name.trim(),
+    onInvite({
       email: email.trim(),
       title: title.trim() || "Team member",
       role,
@@ -71,7 +72,9 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>Invite a teammate</DialogTitle>
-          <DialogDescription>Three quick steps to add someone to this project.</DialogDescription>
+          <DialogDescription>
+            They join your company when they sign in with this email — no separate workspace.
+          </DialogDescription>
         </DialogHeader>
 
         <ol className="flex items-center gap-2">
@@ -103,7 +106,8 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
               <PersonAvatar
                 member={{
                   id: "preview",
-                  name: name || "New Person",
+                  userId: "preview",
+                  name: previewName,
                   email,
                   title,
                   role,
@@ -112,7 +116,7 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
                 size="lg"
               />
               <p className="text-xs text-muted-foreground">
-                Their initials and colour appear on every card they own.
+                Their colour appears on every card they own.
               </p>
             </div>
 
@@ -136,15 +140,6 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
                   />
                 ))}
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="member-name">Full name</Label>
-              <Input
-                id="member-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Alex Doe"
-              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="member-email">Work email</Label>
@@ -178,9 +173,7 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
                   aria-pressed={role === r.id}
                   className={cn(
                     "w-full rounded-2xl border p-3 text-left transition-colors",
-                    role === r.id
-                      ? "border-brand bg-brand-soft"
-                      : "border-border hover:bg-muted/60",
+                    role === r.id ? "border-brand bg-brand-soft" : "border-border hover:bg-muted/60",
                   )}
                 >
                   <p className="text-sm font-medium">{r.label}</p>
@@ -195,12 +188,20 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
           <div className="rounded-2xl border border-border/70 p-4">
             <div className="flex items-center gap-3">
               <PersonAvatar
-                member={{ id: "preview", name: name || "Unnamed", email, title, role, colorId }}
+                member={{
+                  id: "preview",
+                  userId: "preview",
+                  name: previewName,
+                  email,
+                  title,
+                  role,
+                  colorId,
+                }}
                 size="lg"
               />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{name || "Unnamed"}</p>
-                <p className="truncate text-xs text-muted-foreground">{email}</p>
+                <p className="truncate text-sm font-semibold">{email || "no email"}</p>
+                <p className="truncate text-xs text-muted-foreground">Invitation — pending sign-in</p>
               </div>
             </div>
             <dl className="mt-4 space-y-2 text-xs">
@@ -229,7 +230,7 @@ export function OnboardingDialog({ open, onOpenChange, onAdd, suggestedColorId }
             disabled={!canContinue}
             onClick={() => (step === 2 ? finish() : setStep((s) => s + 1))}
           >
-            {step === 2 ? "Add to team" : "Continue"}
+            {step === 2 ? "Send invite" : "Continue"}
           </Button>
         </DialogFooter>
       </DialogContent>

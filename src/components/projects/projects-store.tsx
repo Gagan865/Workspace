@@ -11,27 +11,36 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  SEED_MEMBERS,
-  SEED_PROJECTS,
   defaultStages,
   nextColorId,
+  type Invite,
   type Member,
   type PersonColorId,
   type Project,
   type Stage,
   type Task,
+  type TeamRole,
 } from "./types";
 
 type Store = {
   ready: boolean;
+  hasCompany: boolean;
+  companyId: string | null;
+  companyName: string;
+  myRole: TeamRole | null;
+  isAdmin: boolean;
   projects: Project[];
   members: Member[];
+  invites: Invite[];
   tasks: Task[];
+  createCompany: (name: string) => Promise<void>;
+  renameCompany: (name: string) => Promise<void>;
   addProject: (name: string) => Promise<Project | null>;
   renameProject: (id: string, name: string) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
   setProjectStages: (id: string, stages: Stage[], removedStageId?: string) => Promise<void>;
-  addMember: (member: Omit<Member, "id">) => Promise<void>;
+  inviteMember: (invite: Omit<Invite, "id">) => Promise<void>;
+  cancelInvite: (id: string) => Promise<void>;
   setMemberColor: (id: string, colorId: PersonColorId) => Promise<void>;
   saveTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -45,17 +54,77 @@ const ProjectsContext = createContext<Store | null>(null);
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("");
+  const [myRole, setMyRole] = useState<TeamRole | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const load = useCallback(async () => {
-    const [projectRes, stageRes, memberRes, taskRes] = await Promise.all([
+    const { data: userData } = await supabase.auth.getUser();
+    const myId = userData.user?.id;
+    if (!myId) return;
+
+    // Pick up any invitation issued to this email while I already had an account.
+    await supabase.rpc("accept_invitations");
+
+    const { data: memberRows } = await supabase.from("company_members").select("*");
+    if (!memberRows || memberRows.length === 0) {
+      setCompanyId(null);
+      setCompanyName("");
+      setMyRole(null);
+      setProjects([]);
+      setMembers([]);
+      setInvites([]);
+      setTasks([]);
+      return;
+    }
+
+    const cid = memberRows.find((m) => m.user_id === myId)?.company_id ?? memberRows[0]!.company_id;
+    setCompanyId(cid);
+    setMyRole((memberRows.find((m) => m.user_id === myId)?.role ?? null) as TeamRole | null);
+
+    const [companyRes, profileRes, inviteRes, projectRes, stageRes, taskRes] = await Promise.all([
+      supabase.from("companies").select("*").eq("id", cid).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", memberRows.map((m) => m.user_id)),
+      supabase.from("invitations").select("*").is("accepted_at", null),
       supabase.from("projects").select("*").order("created_at"),
       supabase.from("stages").select("*").order("position"),
-      supabase.from("members").select("*").order("created_at"),
       supabase.from("tasks").select("*").order("created_at"),
     ]);
+
+    setCompanyName(companyRes.data?.name ?? "");
+
+    const profiles = profileRes.data ?? [];
+    setMembers(
+      memberRows.map((m) => {
+        const p = profiles.find((x) => x.id === m.user_id);
+        return {
+          id: m.id,
+          userId: m.user_id,
+          name: p?.display_name || p?.email || "Teammate",
+          email: p?.email || "",
+          title: m.title,
+          role: m.role as TeamRole,
+          colorId: m.color_id as PersonColorId,
+        };
+      }),
+    );
+
+    setInvites(
+      (inviteRes.data ?? []).map((i) => ({
+        id: i.id,
+        email: i.email,
+        role: i.role as TeamRole,
+        title: i.title,
+        colorId: i.color_id as PersonColorId,
+      })),
+    );
 
     const stages = stageRes.data ?? [];
     setProjects(
@@ -66,16 +135,6 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         stages: stages
           .filter((s) => s.project_id === p.id)
           .map((s) => ({ id: s.id, label: s.label })),
-      })),
-    );
-    setMembers(
-      (memberRes.data ?? []).map((m) => ({
-        id: m.id,
-        name: m.name,
-        email: m.email,
-        title: m.title,
-        role: m.role as Member["role"],
-        colorId: m.color_id as PersonColorId,
       })),
     );
     setTasks(
@@ -94,40 +153,46 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         lastUpdateAt: t.last_update_at,
       })),
     );
-    return { projects: projectRes.data ?? [], members: memberRes.data ?? [] };
   }, []);
-
-  const seed = useCallback(async () => {
-    await supabase.rpc("seed_workspace");
-  }, []);
-
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getUser();
       if (!data.user) return;
-      const first = await load();
-      if (cancelled) return;
-      if (first.projects.length === 0) {
-        await seed();
-        if (!cancelled) await load();
-      }
+      await load();
       if (!cancelled) setReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [load, seed]);
+  }, [load]);
+
+  const isAdmin = myRole === "owner" || myRole === "manager";
 
   const value = useMemo<Store>(
     () => ({
       ready,
+      hasCompany: companyId !== null,
+      companyId,
+      companyName,
+      myRole,
+      isAdmin,
       projects,
       members,
+      invites,
       tasks,
       refresh: async () => {
         await load();
+      },
+      createCompany: async (name) => {
+        await supabase.rpc("create_company", { p_name: name });
+        await load();
+      },
+      renameCompany: async (name) => {
+        if (!companyId) return;
+        setCompanyName(name);
+        await supabase.from("companies").update({ name }).eq("id", companyId);
       },
       addProject: async (name) => {
         const { data: row } = await supabase.from("projects").insert({ name }).select().single();
@@ -190,45 +255,31 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         }
         const fallback = kept[0]?.id ?? inserted[0]?.id;
         if (removedStageId && fallback) {
-          await supabase
-            .from("tasks")
-            .update({ stage_id: fallback })
-            .eq("stage_id", removedStageId);
+          await supabase.from("tasks").update({ stage_id: fallback }).eq("stage_id", removedStageId);
         }
         for (const stage of removed) {
           await supabase.from("stages").delete().eq("id", stage.id);
         }
         await load();
       },
-      addMember: async (member) => {
-        const { data } = await supabase
-          .from("members")
-          .insert({
-            name: member.name,
-            email: member.email,
-            title: member.title,
-            role: member.role,
-            color_id: member.colorId,
-          })
-          .select()
-          .single();
-        if (data) {
-          setMembers((prev) => [
-            ...prev,
-            {
-              id: data.id,
-              name: data.name,
-              email: data.email,
-              title: data.title,
-              role: data.role as Member["role"],
-              colorId: data.color_id as PersonColorId,
-            },
-          ]);
-        }
+      inviteMember: async (invite) => {
+        if (!companyId) return;
+        await supabase.from("invitations").insert({
+          company_id: companyId,
+          email: invite.email.trim().toLowerCase(),
+          role: invite.role,
+          title: invite.title,
+          color_id: invite.colorId,
+        });
+        await load();
+      },
+      cancelInvite: async (id) => {
+        setInvites((prev) => prev.filter((i) => i.id !== id));
+        await supabase.from("invitations").delete().eq("id", id);
       },
       setMemberColor: async (id, colorId) => {
         setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, colorId } : m)));
-        await supabase.from("members").update({ color_id: colorId }).eq("id", id);
+        await supabase.from("company_members").update({ color_id: colorId }).eq("id", id);
       },
       saveTask: async (task) => {
         const payload = {
@@ -254,10 +305,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         } else {
           const { data } = await supabase.from("tasks").insert(payload).select().single();
           if (data) {
-            setTasks((prev) => [
-              ...prev,
-              { ...task, id: data.id, lastUpdateAt: data.last_update_at },
-            ]);
+            setTasks((prev) => [...prev, { ...task, id: data.id, lastUpdateAt: data.last_update_at }]);
           }
         }
       },
@@ -275,9 +323,10 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         await supabase.from("task_updates").insert({ task_id: taskId, note });
         await supabase.from("tasks").update({ last_update_at: now }).eq("id", taskId);
       },
-      freeColorId: () => nextColorId(members.map((m) => m.colorId)),
+      freeColorId: () =>
+        nextColorId([...members.map((m) => m.colorId), ...invites.map((i) => i.colorId)]),
     }),
-    [ready, projects, members, tasks, load],
+    [ready, companyId, companyName, myRole, isAdmin, projects, members, invites, tasks, load],
   );
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;

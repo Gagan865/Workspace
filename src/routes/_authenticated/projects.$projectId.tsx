@@ -279,7 +279,7 @@ function ProjectPage() {
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         suggestedColorId={store.freeColorId()}
-        onAdd={store.addMember}
+        onInvite={store.inviteMember}
       />
     </div>
   );
