@@ -192,6 +192,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_counts: {
+        Row: {
+          id: string
+          company_id: string
+          project_id: string
+          day: string
+          count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id?: string
+          project_id: string
+          day?: string
+          count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          project_id?: string
+          day?: string
+          count?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       payment_milestones: {
         Row: {
           id: string
@@ -296,6 +323,7 @@ export type Database = {
           quote_id: string | null
           created_at: string
           company_id: string
+          kind: string
         }
         Insert: {
           id?: string
@@ -304,6 +332,7 @@ export type Database = {
           quote_id?: string | null
           created_at?: string
           company_id?: string
+          kind?: string
         }
         Update: {
           id?: string
@@ -312,6 +341,7 @@ export type Database = {
           quote_id?: string | null
           created_at?: string
           company_id?: string
+          kind?: string
         }
         Relationships: []
       }

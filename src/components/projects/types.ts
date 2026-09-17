@@ -51,12 +51,18 @@ export type Invite = {
   colorId: PersonColorId;
 };
 
+export type ProjectKind = "software" | "business";
+
 export type Project = {
   id: string;
   name: string;
+  kind: ProjectKind;
   stages: Stage[];
   quoteId?: string | undefined;
 };
+
+// A single day's lead count for a business project.
+export type LeadDay = { projectId: string; day: string; count: number };
 
 export const PERSON_COLORS: { id: PersonColorId; label: string; index: number }[] = [
   { id: "p1", label: "Ruby", index: 1 },

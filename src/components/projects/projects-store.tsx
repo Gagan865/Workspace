@@ -14,9 +14,11 @@ import {
   defaultStages,
   nextColorId,
   type Invite,
+  type LeadDay,
   type Member,
   type PersonColorId,
   type Project,
+  type ProjectKind,
   type Stage,
   type Task,
   type TeamRole,
@@ -33,9 +35,12 @@ type Store = {
   members: Member[];
   invites: Invite[];
   tasks: Task[];
+  leadDays: LeadDay[];
   createCompany: (name: string) => Promise<void>;
   renameCompany: (name: string) => Promise<void>;
-  addProject: (name: string) => Promise<Project | null>;
+  addProject: (name: string, kind?: ProjectKind) => Promise<Project | null>;
+  setProjectKind: (id: string, kind: ProjectKind) => Promise<void>;
+  setLeadCount: (projectId: string, day: string, count: number) => Promise<void>;
   renameProject: (id: string, name: string) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
   setProjectStages: (id: string, stages: Stage[], removedStageId?: string) => Promise<void>;
@@ -62,6 +67,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [leadDays, setLeadDays] = useState<LeadDay[]>([]);
 
   const load = useCallback(async () => {
     const { data: userData } = await supabase.auth.getUser();
@@ -80,6 +86,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       setMembers([]);
       setInvites([]);
       setTasks([]);
+      setLeadDays([]);
       return;
     }
 
@@ -87,7 +94,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     setCompanyId(cid);
     setMyRole((memberRows.find((m) => m.user_id === myId)?.role ?? null) as TeamRole | null);
 
-    const [companyRes, profileRes, inviteRes, projectRes, stageRes, taskRes] = await Promise.all([
+    const [companyRes, profileRes, inviteRes, projectRes, stageRes, taskRes, leadRes] = await Promise.all([
       supabase.from("companies").select("*").eq("id", cid).maybeSingle(),
       supabase
         .from("profiles")
@@ -97,6 +104,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       supabase.from("projects").select("*").order("created_at"),
       supabase.from("stages").select("*").order("position"),
       supabase.from("tasks").select("*").order("created_at"),
+      supabase.from("lead_counts").select("*").order("day"),
     ]);
 
     setCompanyName(companyRes.data?.name ?? "");
@@ -132,10 +140,18 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       (projectRes.data ?? []).map((p) => ({
         id: p.id,
         name: p.name,
+        kind: ((p as { kind?: string }).kind as ProjectKind) ?? "business",
         quoteId: p.quote_id ?? undefined,
         stages: stages
           .filter((s) => s.project_id === p.id)
           .map((s) => ({ id: s.id, label: s.label })),
+      })),
+    );
+    setLeadDays(
+      (leadRes.data ?? []).map((l) => ({
+        projectId: l.project_id,
+        day: l.day,
+        count: Number(l.count),
       })),
     );
     setTasks(
@@ -183,6 +199,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       members,
       invites,
       tasks,
+      leadDays,
       refresh: async () => {
         await load();
       },
@@ -195,8 +212,12 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         setCompanyName(name);
         await supabase.from("companies").update({ name }).eq("id", companyId);
       },
-      addProject: async (name) => {
-        const { data: row } = await supabase.from("projects").insert({ name }).select().single();
+      addProject: async (name, kind = "business") => {
+        const { data: row } = await supabase
+          .from("projects")
+          .insert({ name, kind })
+          .select()
+          .single();
         if (!row) return null;
         const { data: stageRows } = await supabase
           .from("stages")
@@ -211,12 +232,31 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         const project: Project = {
           id: row.id,
           name: row.name,
+          kind: ((row as { kind?: string }).kind as ProjectKind) ?? kind,
           stages: (stageRows ?? [])
             .sort((a, b) => a.position - b.position)
             .map((s) => ({ id: s.id, label: s.label })),
         };
         setProjects((prev) => [...prev, project]);
         return project;
+      },
+      setProjectKind: async (id, kind) => {
+        setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, kind } : p)));
+        await supabase.from("projects").update({ kind }).eq("id", id);
+      },
+      setLeadCount: async (projectId, day, count) => {
+        setLeadDays((prev) => {
+          const idx = prev.findIndex((l) => l.projectId === projectId && l.day === day);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = { projectId, day, count };
+            return next;
+          }
+          return [...prev, { projectId, day, count }];
+        });
+        await supabase
+          .from("lead_counts")
+          .upsert({ project_id: projectId, day, count }, { onConflict: "project_id,day" });
       },
       renameProject: async (id, name) => {
         setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
@@ -334,7 +374,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       freeColorId: () =>
         nextColorId([...members.map((m) => m.colorId), ...invites.map((i) => i.colorId)]),
     }),
-    [ready, companyId, companyName, myRole, isAdmin, projects, members, invites, tasks, load],
+    [ready, companyId, companyName, myRole, isAdmin, projects, members, invites, tasks, leadDays, load],
   );
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;

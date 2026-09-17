@@ -57,6 +57,13 @@
       "when": 1789581300000,
       "tag": "0007_quote_deposit",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789581400000,
+      "tag": "0008_leads",
+      "breakpoints": true
     }
   ]
 }

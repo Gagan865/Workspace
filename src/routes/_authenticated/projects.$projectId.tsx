@@ -1,7 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { KanbanSquare, MoreHorizontal, Plus, Settings2, Table2, UserPlus } from "lucide-react";
+import {
+  KanbanSquare,
+  MoreHorizontal,
+  Plus,
+  Settings2,
+  Table2,
+  TrendingUp,
+  UserPlus,
+} from "lucide-react";
 import { useState } from "react";
 
+import { LeadsView } from "@/components/projects/leads-view";
 import { MemberColorPicker } from "@/components/projects/member-color-picker";
 import { OnboardingDialog } from "@/components/projects/onboarding-dialog";
 import { useProjects } from "@/components/projects/projects-store";
@@ -52,7 +61,7 @@ function ProjectPage() {
   const members = store.members;
 
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [view, setView] = useState<"board" | "table">("board");
+  const [view, setView] = useState<"board" | "table" | "leads">("board");
   const [taskOpen, setTaskOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [workflowOpen, setWorkflowOpen] = useState(false);
@@ -74,6 +83,12 @@ function ProjectPage() {
   }
 
   const stages = project.stages;
+  const viewOptions: { id: "board" | "table" | "leads"; label: string; icon: typeof KanbanSquare }[] =
+    [
+      { id: "board", label: "Board", icon: KanbanSquare },
+      { id: "table", label: "Table", icon: Table2 },
+    ];
+  if (project.kind === "business") viewOptions.push({ id: "leads", label: "Leads", icon: TrendingUp });
   const counts: Record<string, number> = {};
   for (const stage of stages) counts[stage.id] = tasks.filter((t) => t.stageId === stage.id).length;
 
@@ -170,6 +185,17 @@ function ProjectPage() {
                     >
                       Rename project
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const next = project.kind === "business" ? "software" : "business";
+                        store.setProjectKind(project.id, next);
+                        if (next === "software") setView("board");
+                      }}
+                    >
+                      {project.kind === "business"
+                        ? "Switch to software project"
+                        : "Switch to business project"}
+                    </DropdownMenuItem>
                     {store.isAdmin && (
                       <DropdownMenuItem onClick={removeProject} className="text-destructive">
                         Delete project
@@ -186,12 +212,7 @@ function ProjectPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex rounded-xl border border-border/70 bg-card/80 p-1">
-                {(
-                  [
-                    { id: "board", label: "Board", icon: KanbanSquare },
-                    { id: "table", label: "Table", icon: Table2 },
-                  ] as const
-                ).map((option) => (
+                {viewOptions.map((option) => (
                   <button
                     key={option.id}
                     type="button"
@@ -241,7 +262,11 @@ function ProjectPage() {
           </div>
         </header>
 
-        {view === "board" ? (
+        {view === "leads" && project.kind === "business" ? (
+          <LeadsView projectId={project.id} />
+        ) : view === "table" ? (
+          <TaskTable stages={stages} tasks={tasks} members={members} onOpen={openTask} />
+        ) : (
           <TaskBoard
             stages={stages}
             tasks={tasks}
@@ -254,8 +279,6 @@ function ProjectPage() {
             onDelete={store.deleteTask}
             onLogUpdate={store.logTaskUpdate}
           />
-        ) : (
-          <TaskTable stages={stages} tasks={tasks} members={members} onOpen={openTask} />
         )}
       </div>
 

@@ -16,6 +16,7 @@ import {
 import { useState, type ReactNode } from "react";
 
 import { useProjects } from "@/components/projects/projects-store";
+import { type ProjectKind } from "@/components/projects/types";
 import { ACCENTS, useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [newProject, setNewProject] = useState("");
+  const [newKind, setNewKind] = useState<ProjectKind>("business");
   const { projects, addProject } = useProjects();
   const navigate = useNavigate();
   const { mode, toggleMode, accent, setAccent } = useTheme();
@@ -107,13 +109,31 @@ export function AppShell({ children }: { children: ReactNode }) {
                         </Link>
                       );
                     })}
+                    <div className="flex gap-1 pt-1.5" role="group" aria-label="New project type">
+                      {(["business", "software"] as const).map((k) => (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => setNewKind(k)}
+                          aria-pressed={newKind === k}
+                          className={cn(
+                            "flex-1 rounded-lg px-2 py-1 text-[10px] font-medium capitalize transition-colors",
+                            newKind === k
+                              ? "bg-brand text-brand-foreground"
+                              : "border border-sidebar-border text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {k}
+                        </button>
+                      ))}
+                    </div>
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault();
                         const name = newProject.trim();
                         if (!name) return;
                         setNewProject("");
-                        const created = await addProject(name);
+                        const created = await addProject(name, newKind);
                         if (!created) return;
                         navigate({
                           to: "/projects/$projectId",
