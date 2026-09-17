@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  BarChart3,
   CalendarCheck,
   CalendarDays,
   FileSignature,
@@ -25,6 +26,7 @@ const NAV = [
   { to: "/quotes", label: "Quotations", hint: "Build & send quotes", icon: FileText },
   { to: "/agreements", label: "Agreements", hint: "Contracts & terms", icon: FileSignature },
   { to: "/money", label: "Money", hint: "Payments & collection", icon: Wallet },
+  { to: "/reports", label: "Reports", hint: "Owner overview", icon: BarChart3 },
   { to: "/calendar", label: "Calendar", hint: "Due dates & reminders", icon: CalendarDays },
   { to: "/planner", label: "Personal Planner", hint: "Daily journal", icon: CalendarCheck },
   { to: "/settings", label: "Settings", hint: "Reminders & account", icon: Settings },
@@ -34,10 +36,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [newProject, setNewProject] = useState("");
   const [newKind, setNewKind] = useState<ProjectKind>("business");
-  const { projects, addProject } = useProjects();
+  const { projects, addProject, isAdmin } = useProjects();
   const navigate = useNavigate();
   const { mode, toggleMode, accent, setAccent } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const nav = NAV.filter((item) => item.to !== "/reports" || isAdmin);
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -60,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = pathname.startsWith(item.to);
             return (
               <div key={item.to}>
@@ -214,7 +217,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="font-display text-xs font-bold">P</span>
           </div>
           <div className="flex min-w-0 flex-1 gap-1">
-            {NAV.map((item) => (
+            {nav.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -225,7 +228,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     : "text-muted-foreground",
                 )}
               >
-                {item.label.split(" ")[1]}
+                {item.label.split(" ").at(-1)}
               </Link>
             ))}
           </div>

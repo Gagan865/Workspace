@@ -168,6 +168,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         logged: Number(t.logged),
         remaining: Number(t.remaining),
         lastUpdateAt: t.last_update_at,
+        createdAt: t.created_at,
       })),
     );
   }, []);

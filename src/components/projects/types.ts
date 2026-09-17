@@ -15,6 +15,7 @@ export type Task = {
   logged: number;
   remaining: number;
   lastUpdateAt?: string | undefined;
+  createdAt?: string | undefined;
 };
 
 export type TeamRole = "owner" | "manager" | "contributor" | "viewer";
