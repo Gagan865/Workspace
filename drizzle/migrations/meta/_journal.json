@@ -50,6 +50,13 @@
       "when": 1789581200000,
       "tag": "0006_planner_content",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789581300000,
+      "tag": "0007_quote_deposit",
+      "breakpoints": true
     }
   ]
 }

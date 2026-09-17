@@ -41,6 +41,7 @@ type Store = {
   setProjectStages: (id: string, stages: Stage[], removedStageId?: string) => Promise<void>;
   inviteMember: (invite: Omit<Invite, "id">) => Promise<void>;
   cancelInvite: (id: string) => Promise<void>;
+  removeMember: (id: string) => Promise<void>;
   setMemberColor: (id: string, colorId: PersonColorId) => Promise<void>;
   saveTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -276,6 +277,13 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       cancelInvite: async (id) => {
         setInvites((prev) => prev.filter((i) => i.id !== id));
         await supabase.from("invitations").delete().eq("id", id);
+      },
+      removeMember: async (id) => {
+        // Unassign this person's tasks, then remove their membership (admin only, per RLS).
+        setMembers((prev) => prev.filter((m) => m.id !== id));
+        setTasks((prev) => prev.map((t) => (t.ownerId === id ? { ...t, ownerId: "" } : t)));
+        await supabase.from("tasks").update({ member_id: null }).eq("member_id", id);
+        await supabase.from("company_members").delete().eq("id", id);
       },
       setMemberColor: async (id, colorId) => {
         setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, colorId } : m)));

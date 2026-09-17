@@ -135,6 +135,18 @@ function SettingsPage() {
                 <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                   {roleLabel(m.role)}
                 </span>
+                {store.isAdmin && m.email !== email && (
+                  <button
+                    aria-label={`Remove ${m.name}`}
+                    onClick={() => {
+                      if (window.confirm(`Remove ${m.name} from ${store.companyName}? Their tasks become unassigned.`))
+                        store.removeMember(m.id);
+                    }}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </li>
             ))}
           </ul>

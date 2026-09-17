@@ -36,7 +36,7 @@ export function CompanyGate({ children }: { children: ReactNode }) {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand text-brand-foreground shadow-soft">
-            <span className="font-display text-sm font-bold">W</span>
+            <span className="font-display text-sm font-bold">P</span>
           </div>
           <div>
             <h1 className="font-display text-lg font-semibold">Create your company</h1>

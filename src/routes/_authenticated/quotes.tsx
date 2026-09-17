@@ -38,10 +38,18 @@ type Quote = {
   valid_until: string | null;
   currency: string;
   discount: number;
+  deposit: number;
   notes: string;
   terms: string;
   status: string;
   project_id: string | null;
+};
+
+// Your company's sender block, shown at the top of every quotation. Edit freely.
+const SENDER = {
+  tagline: "AI Automation & CRM Solutions",
+  location: "Bangalore, Karnataka, India",
+  website: "www.prisim.co.in",
 };
 
 const STATUSES = ["draft", "sent", "accepted", "declined"] as const;
@@ -53,7 +61,7 @@ const field =
 const labelCls = "block text-xs font-medium text-muted-foreground";
 
 function QuotesPage() {
-  const { addProject, refresh } = useProjects();
+  const { addProject, refresh, companyName } = useProjects();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [current, setCurrent] = useState<Quote | null>(null);
@@ -125,6 +133,7 @@ function QuotesPage() {
         valid_until: current.valid_until,
         currency: current.currency,
         discount: current.discount,
+        deposit: current.deposit,
         notes: current.notes,
         terms: current.terms,
         status: current.status,
@@ -184,6 +193,7 @@ function QuotesPage() {
         valid_until: current.valid_until,
         currency: current.currency,
         discount: current.discount,
+        deposit: current.deposit,
         notes: current.notes,
         terms: current.terms,
       })
@@ -434,6 +444,15 @@ function QuotesPage() {
                   onChange={(e) => patch({ discount: Number(e.target.value) })}
                 />
               </label>
+              <label className={labelCls}>
+                Advance paid
+                <input
+                  type="number"
+                  className={field}
+                  value={current.deposit}
+                  onChange={(e) => patch({ deposit: Number(e.target.value) })}
+                />
+              </label>
             </div>
 
             <label className={labelCls}>
@@ -489,14 +508,26 @@ function QuotesPage() {
           </section>
 
           <section className="print-area rounded-2xl border border-border bg-card p-8 text-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="font-display text-2xl font-semibold">Quotation</h2>
-                <p className="text-xs text-muted-foreground">{current.number}</p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="font-display text-2xl font-semibold tracking-tight">
+                  {companyName || "PRISIM"}
+                </p>
+                <p className="text-xs text-muted-foreground">{SENDER.tagline}</p>
+                <p className="text-xs text-muted-foreground">{SENDER.location}</p>
+                <p className="text-xs text-muted-foreground">{SENDER.website}</p>
               </div>
-              <div className="text-right text-xs text-muted-foreground">
-                <p>Issued {formatDate(current.issue_date)}</p>
-                <p>Valid until {formatDate(current.valid_until)}</p>
+              <div className="shrink-0 text-right">
+                <h2 className="font-display text-xl font-semibold tracking-wide uppercase">
+                  Quotation
+                </h2>
+                <p className="text-xs text-muted-foreground">{current.number}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Issued {formatDate(current.issue_date)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Valid until {formatDate(current.valid_until)}
+                </p>
               </div>
             </div>
 
@@ -556,6 +587,23 @@ function QuotesPage() {
                 <span>Total</span>
                 <span>{money(totals.total, current.currency)}</span>
               </div>
+              {Number(current.deposit) > 0 && (
+                <>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Advance paid</span>
+                    <span>-{money(Number(current.deposit), current.currency)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-1 font-semibold">
+                    <span>Balance due</span>
+                    <span>
+                      {money(
+                        Math.max(0, totals.total - Number(current.deposit)),
+                        current.currency,
+                      )}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {current.notes && (

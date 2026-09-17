@@ -370,6 +370,7 @@ export type Database = {
           project_id: string | null
           created_at: string
           company_id: string
+          deposit: number
         }
         Insert: {
           id?: string
@@ -389,6 +390,7 @@ export type Database = {
           project_id?: string | null
           created_at?: string
           company_id?: string
+          deposit?: number
         }
         Update: {
           id?: string
@@ -408,6 +410,7 @@ export type Database = {
           project_id?: string | null
           created_at?: string
           company_id?: string
+          deposit?: number
         }
         Relationships: []
       }

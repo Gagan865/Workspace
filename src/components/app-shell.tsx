@@ -47,11 +47,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex items-center gap-3 px-4 py-5">
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand text-brand-foreground shadow-soft">
-            <span className="font-display text-sm font-bold">W</span>
+            <span className="font-display text-sm font-bold">P</span>
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate font-display text-sm font-semibold">Workspace</p>
+              <p className="truncate font-display text-sm font-semibold">PRISIM</p>
               <p className="truncate text-xs text-muted-foreground">Projects & planner</p>
             </div>
           )}
@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2 border-b border-border bg-sidebar px-4 py-3 md:hidden">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand text-brand-foreground">
-            <span className="font-display text-xs font-bold">W</span>
+            <span className="font-display text-xs font-bold">P</span>
           </div>
           <div className="flex min-w-0 flex-1 gap-1">
             {NAV.map((item) => (

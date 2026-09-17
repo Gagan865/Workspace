@@ -170,9 +170,11 @@ function ProjectPage() {
                     >
                       Rename project
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={removeProject} className="text-destructive">
-                      Delete project
-                    </DropdownMenuItem>
+                    {store.isAdmin && (
+                      <DropdownMenuItem onClick={removeProject} className="text-destructive">
+                        Delete project
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

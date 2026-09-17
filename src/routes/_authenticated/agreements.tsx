@@ -47,6 +47,19 @@ type Agreement = {
 };
 
 const STATUSES = ["draft", "sent", "signed"] as const;
+
+// TCCCPR 2018 Undertaking & Declaration — fixed declaration text; placeholders in
+// [brackets] are filled per client. Editable after it's created.
+const UNDERTAKING_CLAUSES = [
+  "The Company solemnly declares that it is not performing any activities which is in violation of the Telecom Commercial Communications Customer Preference Regulations (TCCCPR) 2018 & its terms and conditions (as amended from time to time).",
+  "The Company undertakes to ensure that, at all times, there is no misuse/unauthorized use of the voice connectivity provided to it in any manner & will not make Unsolicited Commercial Communication (UCC) to subscribers across various telecom service providers.",
+  "Any commercial communication, with or without the consent of the customer, from non-telemarketing numbers is a violation of the provisions of the TCCCPR 2018 regulations.",
+  "The company is required to exclusively use the 140 series for all promotional calls, including calls made to customers with valid opt-in/digital consent.",
+  "Failure to comply with the TCCCPR 2018 regulations provide for barring the services, for disconnection or blacklisting of the entire account across all operators for up to two years.",
+  "The Company agrees that CloudConnect may be required to disclose the information pertaining to a customer to the Government / Regulatory Authority / security agency. CloudConnect reserves the right to disclose the same at its discretion without prior intimation to the customer.",
+  "The Company shall be exclusively responsible for any breach of any conditions included in this Undertaking and/or any act/omission pertaining to usage of services in running their Operations, which is directly attributable to it and the Company will bear all financial losses & consequences arising out of such breach/act/omission.",
+];
+
 const field =
   "mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-brand";
 const labelCls = "block text-xs font-medium text-muted-foreground";
@@ -81,6 +94,26 @@ function AgreementsPage() {
         title: "Services agreement",
         start_date: new Date().toISOString().slice(0, 10),
         clauses: ["Either party may end this agreement with 30 days' written notice."],
+      })
+      .select()
+      .single();
+    if (data) await load(data.id);
+  };
+
+  const createUndertaking = async () => {
+    const { data } = await supabase
+      .from("agreements")
+      .insert({
+        title: "Undertaking and Declaration",
+        party_a: "[Your Company Pvt Ltd] — Authorized Signatory",
+        party_b:
+          "CloudConnect Communications Private Limited\nA1, 2nd Floor, Ofis Square, Sec 3, U.P. 20130, IN",
+        start_date: new Date().toISOString().slice(0, 10),
+        fee: 0,
+        scope:
+          "Subject: Undertaking for usage of services as per TCCCPR regulations, 2018.\n\nI, [Name of Authorized Signatory], Authorized signatory of [Name of the Company], having registered office at [Address of the company], hereby declare the following:",
+        clauses: UNDERTAKING_CLAUSES,
+        signature_a: "[Name] · [Designation] · [Place] · [Date]",
       })
       .select()
       .single();
@@ -150,6 +183,12 @@ function AgreementsPage() {
             </option>
           ))}
         </select>
+        <button
+          onClick={createUndertaking}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-input px-3 py-2 text-sm font-medium hover:bg-accent"
+        >
+          <Plus className="h-4 w-4" /> Undertaking (TCCCPR)
+        </button>
         <button
           onClick={create}
           className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3 py-2 text-sm font-medium text-brand-foreground hover:opacity-90"
@@ -397,7 +436,7 @@ function AgreementsPage() {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">And</p>
-                <p className="font-medium">{current.party_b || "—"}</p>
+                <p className="font-medium whitespace-pre-line">{current.party_b || "—"}</p>
                 {current.client_email && (
                   <p className="text-muted-foreground">{current.client_email}</p>
                 )}
@@ -409,15 +448,17 @@ function AgreementsPage() {
               <p className="whitespace-pre-line">{current.scope || "—"}</p>
             </div>
 
-            <div className="mt-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fee</p>
-              <p>{money(Number(current.fee), current.currency)}</p>
-              {current.payment_schedule && (
-                <p className="whitespace-pre-line text-muted-foreground">
-                  {current.payment_schedule}
-                </p>
-              )}
-            </div>
+            {(Number(current.fee) > 0 || current.payment_schedule) && (
+              <div className="mt-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Fee</p>
+                {Number(current.fee) > 0 && <p>{money(Number(current.fee), current.currency)}</p>}
+                {current.payment_schedule && (
+                  <p className="whitespace-pre-line text-muted-foreground">
+                    {current.payment_schedule}
+                  </p>
+                )}
+              </div>
+            )}
 
             {current.clauses.length > 0 && (
               <div className="mt-4">
