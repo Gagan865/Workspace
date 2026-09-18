@@ -64,6 +64,13 @@
       "when": 1789581400000,
       "tag": "0008_leads",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789581500000,
+      "tag": "0009_quote_invoice_layout",
+      "breakpoints": true
     }
   ]
 }

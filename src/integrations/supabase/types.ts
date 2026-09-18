@@ -356,6 +356,9 @@ export type Database = {
           tax: number
           position: number
           company_id: string
+          name: string
+          qty_text: string
+          amount_text: string
         }
         Insert: {
           id?: string
@@ -367,6 +370,9 @@ export type Database = {
           tax?: number
           position?: number
           company_id?: string
+          name?: string
+          qty_text?: string
+          amount_text?: string
         }
         Update: {
           id?: string
@@ -378,6 +384,9 @@ export type Database = {
           tax?: number
           position?: number
           company_id?: string
+          name?: string
+          qty_text?: string
+          amount_text?: string
         }
         Relationships: []
       }
@@ -401,6 +410,9 @@ export type Database = {
           created_at: string
           company_id: string
           deposit: number
+          summary: Json
+          plans: Json
+          payment_details: string
         }
         Insert: {
           id?: string
@@ -421,6 +433,9 @@ export type Database = {
           created_at?: string
           company_id?: string
           deposit?: number
+          summary?: Json
+          plans?: Json
+          payment_details?: string
         }
         Update: {
           id?: string
@@ -441,6 +456,9 @@ export type Database = {
           created_at?: string
           company_id?: string
           deposit?: number
+          summary?: Json
+          plans?: Json
+          payment_details?: string
         }
         Relationships: []
       }
