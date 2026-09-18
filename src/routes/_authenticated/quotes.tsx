@@ -574,47 +574,61 @@ function QuotesPage() {
           </section>
 
           {/* ---------------- INVOICE PREVIEW ---------------- */}
-          <section className="print-area rounded-2xl border border-border bg-card p-8 text-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="font-display text-2xl font-bold tracking-tight">
+          <section className="print-area rounded-2xl border border-neutral-200 bg-white p-8 text-sm text-neutral-900">
+            <div className="relative">
+              <Logo plain className="absolute right-0 top-0 h-24 w-auto" />
+              <div className="pr-24 text-center">
+                <h2 className="font-display text-3xl font-bold tracking-tight">
                   {companyName || "PRISIM"}
                 </h2>
-                <p className="mt-2 text-xs">Invoice No: {current.number || "—"}</p>
-                <p className="text-xs">Invoice Date: {formatDate(current.issue_date)}</p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-2 text-right">
-                <Logo plain className="h-12 w-auto max-w-[120px]" />
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Bill To
-                  </p>
-                  <p className="font-medium">{current.client_company || "—"}</p>
-                  {current.client_name && <p>{current.client_name}</p>}
-                  {current.client_address && (
-                    <p className="whitespace-pre-line">{current.client_address}</p>
-                  )}
-                  {current.client_email && (
-                    <p className="text-muted-foreground">{current.client_email}</p>
-                  )}
-                </div>
+                <p className="mt-2 text-xs font-semibold text-neutral-700">
+                  Invoice No: {current.number || "—"}
+                </p>
+                <p className="text-xs font-semibold text-neutral-700">
+                  Invoice Date: {formatDate(current.issue_date)}
+                </p>
               </div>
             </div>
 
-            <hr className="my-4 border-border" />
+            <hr className="my-4 border-neutral-200" />
 
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                From
-              </p>
-              <p className="font-medium">{companyName || "PRISIM"}</p>
-              <p>{SENDER.tagline}</p>
-              <p>{SENDER.location}</p>
-              <p>Website: {SENDER.website}</p>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                  From
+                </p>
+                <p className="font-semibold">{companyName || "PRISIM"}</p>
+                <p>{SENDER.tagline}</p>
+                <p>{SENDER.location}</p>
+                <p>
+                  Website:{" "}
+                  <a
+                    href={`https://${SENDER.website}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    {SENDER.website}
+                  </a>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                  Bill To
+                </p>
+                <p className="font-semibold">{current.client_company || "—"}</p>
+                {current.client_name && <p>{current.client_name}</p>}
+                {current.client_address && (
+                  <p className="whitespace-pre-line">{current.client_address}</p>
+                )}
+                {current.client_email && (
+                  <p className="text-neutral-500">{current.client_email}</p>
+                )}
+              </div>
             </div>
 
             <table className="mt-6 w-full text-left text-sm">
-              <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="border-b border-neutral-200 text-xs uppercase tracking-wide text-neutral-500">
                 <tr>
                   <th className="py-2 pr-3">Item</th>
                   <th className="py-2 pr-3">Description</th>
@@ -625,14 +639,14 @@ function QuotesPage() {
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-3 text-muted-foreground">
+                    <td colSpan={4} className="py-3 text-neutral-500">
                       No line items yet.
                     </td>
                   </tr>
                 ) : (
                   items.map((item) => (
-                    <tr key={item.id} className="border-b border-border/60 align-top">
-                      <td className="py-2 pr-3 font-medium">{item.name || "—"}</td>
+                    <tr key={item.id} className="border-b border-neutral-100 align-top">
+                      <td className="py-2 pr-3 font-semibold">{item.name || "—"}</td>
                       <td className="py-2 pr-3 whitespace-pre-line">{item.description}</td>
                       <td className="py-2 pr-3">{item.qty}</td>
                       <td className="py-2 text-right">{item.amount}</td>
@@ -647,9 +661,12 @@ function QuotesPage() {
                 <p className="mb-2 text-center text-sm font-semibold">Invoice Summary</p>
                 <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
                   {current.summary.map((row, i) => (
-                    <div key={i} className="flex items-baseline justify-between gap-3 border-b border-border/50 pb-1">
-                      <span className="text-muted-foreground">{row.description}</span>
-                      <span className="font-medium">{row.amount}</span>
+                    <div
+                      key={i}
+                      className="flex items-baseline justify-between gap-3 border-b border-neutral-200 pb-1"
+                    >
+                      <span className="text-neutral-500">{row.description}</span>
+                      <span className="font-semibold">{row.amount}</span>
                     </div>
                   ))}
                 </div>
@@ -662,14 +679,12 @@ function QuotesPage() {
                 <div className="space-y-2">
                   {current.plans.map((plan, i) => (
                     <div key={i} className="text-sm">
-                      <p className="font-medium">
+                      <p className="font-semibold">
                         Plan {i + 1}: {plan.name}
                       </p>
-                      {plan.cycle && (
-                        <p className="text-muted-foreground">Billing Cycle: {plan.cycle}</p>
-                      )}
+                      {plan.cycle && <p className="text-neutral-500">Billing Cycle: {plan.cycle}</p>}
                       {plan.period && (
-                        <p className="text-muted-foreground">Subscription Period: {plan.period}</p>
+                        <p className="text-neutral-500">Subscription Period: {plan.period}</p>
                       )}
                     </div>
                   ))}
@@ -680,20 +695,20 @@ function QuotesPage() {
             {current.payment_details && (
               <div className="mt-6">
                 <p className="mb-1 text-sm font-semibold">Payment Details</p>
-                <p className="whitespace-pre-line text-muted-foreground">{current.payment_details}</p>
+                <p className="whitespace-pre-line text-neutral-500">{current.payment_details}</p>
               </div>
             )}
 
             {current.terms && (
               <div className="mt-6">
                 <p className="mb-1 text-sm font-semibold">Terms &amp; Conditions</p>
-                <p className="whitespace-pre-line text-muted-foreground">{current.terms}</p>
+                <p className="whitespace-pre-line text-neutral-500">{current.terms}</p>
               </div>
             )}
 
-            <div className="mt-8 border-t border-border pt-4 text-center">
-              <p className="font-medium">Thank you for choosing {companyName || "PRISIM"}.</p>
-              <p className="text-xs text-muted-foreground">{FOOTER}</p>
+            <div className="mt-8 border-t border-neutral-200 pt-4 text-center">
+              <p className="font-semibold">Thank you for choosing {companyName || "PRISIM"}.</p>
+              <p className="text-xs text-neutral-500">{FOOTER}</p>
             </div>
           </section>
         </div>
