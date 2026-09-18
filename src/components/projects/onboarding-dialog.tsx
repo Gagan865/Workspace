@@ -165,7 +165,7 @@ export function OnboardingDialog({ open, onOpenChange, onInvite, suggestedColorI
 
         {step === 1 && (
           <ul className="space-y-2">
-            {ROLES.map((r) => (
+            {ROLES.filter((r) => r.id !== "owner").map((r) => (
               <li key={r.id}>
                 <button
                   type="button"

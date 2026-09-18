@@ -657,6 +657,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      set_member_role: {
+        Args: { p_member_id: string; p_role: string }
+        Returns: undefined
+      }
     }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }

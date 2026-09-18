@@ -31,6 +31,7 @@ type Store = {
   companyName: string;
   myRole: TeamRole | null;
   isAdmin: boolean;
+  isOwner: boolean;
   projects: Project[];
   members: Member[];
   invites: Invite[];
@@ -47,6 +48,7 @@ type Store = {
   inviteMember: (invite: Omit<Invite, "id">) => Promise<void>;
   cancelInvite: (id: string) => Promise<void>;
   removeMember: (id: string) => Promise<void>;
+  setMemberRole: (id: string, role: TeamRole) => Promise<void>;
   setMemberColor: (id: string, colorId: PersonColorId) => Promise<void>;
   saveTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -187,6 +189,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   }, [load]);
 
   const isAdmin = myRole === "owner" || myRole === "manager";
+  const isOwner = myRole === "owner";
 
   const value = useMemo<Store>(
     () => ({
@@ -196,6 +199,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       companyName,
       myRole,
       isAdmin,
+      isOwner,
       projects,
       members,
       invites,
@@ -326,6 +330,12 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         await supabase.from("tasks").update({ member_id: null }).eq("member_id", id);
         await supabase.from("company_members").delete().eq("id", id);
       },
+      setMemberRole: async (id, role) => {
+        // Owner-only, enforced by the set_member_role RPC. Setting 'owner'
+        // transfers ownership and demotes the current owner.
+        await supabase.rpc("set_member_role", { p_member_id: id, p_role: role });
+        await load();
+      },
       setMemberColor: async (id, colorId) => {
         setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, colorId } : m)));
         await supabase.from("company_members").update({ color_id: colorId }).eq("id", id);
@@ -375,7 +385,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       freeColorId: () =>
         nextColorId([...members.map((m) => m.colorId), ...invites.map((i) => i.colorId)]),
     }),
-    [ready, companyId, companyName, myRole, isAdmin, projects, members, invites, tasks, leadDays, load],
+    [ready, companyId, companyName, myRole, isAdmin, isOwner, projects, members, invites, tasks, leadDays, load],
   );
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { OnboardingDialog } from "@/components/projects/onboarding-dialog";
 import { PersonAvatar } from "@/components/projects/person-avatar";
 import { useProjects } from "@/components/projects/projects-store";
-import { ROLES } from "@/components/projects/types";
+import { ROLES, type TeamRole } from "@/components/projects/types";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -85,7 +85,7 @@ function SettingsPage() {
       <div className="mt-6 space-y-4 rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold">Team</h2>
-          {store.isAdmin && (
+          {store.isOwner && (
             <button
               onClick={() => setInviteOpen(true)}
               className="flex items-center gap-1.5 rounded-xl bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground hover:opacity-90"
@@ -95,7 +95,7 @@ function SettingsPage() {
           )}
         </div>
 
-        {store.isAdmin ? (
+        {store.isOwner ? (
           <label className="block text-xs font-medium text-muted-foreground">
             Company name
             <div className="mt-1 flex gap-2">
@@ -132,10 +132,38 @@ function SettingsPage() {
                     {m.title || "Team member"} · {m.email}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                  {roleLabel(m.role)}
-                </span>
-                {store.isAdmin && m.email !== email && (
+                {store.isOwner && m.email !== email ? (
+                  <select
+                    value={m.role}
+                    aria-label={`Role for ${m.name}`}
+                    onChange={(e) => {
+                      const role = e.target.value as TeamRole;
+                      if (role === m.role) return;
+                      if (role === "owner") {
+                        if (
+                          window.confirm(
+                            `Make ${m.name} the owner? You'll become a manager and can no longer manage the team or change roles.`,
+                          )
+                        )
+                          store.setMemberRole(m.id, role);
+                      } else {
+                        store.setMemberRole(m.id, role);
+                      }
+                    }}
+                    className="shrink-0 rounded-lg border border-input bg-background px-2 py-1 text-[11px] text-foreground"
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                    {roleLabel(m.role)}
+                  </span>
+                )}
+                {store.isOwner && m.email !== email && (
                   <button
                     aria-label={`Remove ${m.name}`}
                     onClick={() => {
@@ -169,7 +197,7 @@ function SettingsPage() {
                       {roleLabel(i.role)} · awaiting sign-in
                     </p>
                   </div>
-                  {store.isAdmin && (
+                  {store.isOwner && (
                     <button
                       aria-label={`Cancel invite for ${i.email}`}
                       onClick={() => store.cancelInvite(i.id)}

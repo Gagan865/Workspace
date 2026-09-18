@@ -234,10 +234,12 @@ function ProjectPage() {
                 <Settings2 className="mr-1.5 h-4 w-4" />
                 Workflow
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)}>
-                <UserPlus className="mr-1.5 h-4 w-4" />
-                Invite team
-              </Button>
+              {store.isOwner && (
+                <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)}>
+                  <UserPlus className="mr-1.5 h-4 w-4" />
+                  Invite team
+                </Button>
+              )}
               <Button size="sm" onClick={openNew}>
                 <Plus className="mr-1.5 h-4 w-4" />
                 Add task
