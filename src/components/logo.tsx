@@ -30,10 +30,10 @@ export function Logo({ className, plain }: { className?: string; plain?: boolean
     >
       {ok ? (
         <img
-          src="/logo.png"
+          src="/mark.png"
           alt="PRISIM"
           onError={() => setOk(false)}
-          className="h-full w-full object-contain p-1"
+          className="h-full w-full object-contain p-0.5"
         />
       ) : (
         <span className="font-display text-sm font-bold">P</span>
