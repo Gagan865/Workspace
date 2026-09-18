@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { Logo } from "@/components/logo";
 import { useProjects } from "@/components/projects/projects-store";
 import { type ProjectKind } from "@/components/projects/types";
 import { ACCENTS, useTheme } from "@/components/theme-provider";
@@ -51,9 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       >
         <div className="flex items-center gap-3 px-4 py-5">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand text-brand-foreground shadow-soft">
-            <span className="font-display text-sm font-bold">P</span>
-          </div>
+          <Logo className="h-10 w-10" />
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate font-display text-sm font-semibold">PRISIM</p>
@@ -213,9 +212,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2 border-b border-border bg-sidebar px-4 py-3 md:hidden">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand text-brand-foreground">
-            <span className="font-display text-xs font-bold">P</span>
-          </div>
+          <Logo className="h-9 w-9 rounded-xl" />
           <div className="flex min-w-0 flex-1 gap-1">
             {nav.map((item) => (
               <Link

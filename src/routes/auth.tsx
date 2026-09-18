@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { Logo } from "@/components/logo";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
@@ -78,9 +79,7 @@ function AuthPage() {
     <div className="grid min-h-screen place-items-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand text-brand-foreground shadow-soft">
-            <span className="font-display text-sm font-bold">P</span>
-          </div>
+          <Logo className="h-11 w-11" />
           <div>
             <h1 className="font-display text-lg font-semibold">PRISIM</h1>
             <p className="text-xs text-muted-foreground">

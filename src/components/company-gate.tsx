@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 
+import { Logo } from "@/components/logo";
 import { useProjects } from "@/components/projects/projects-store";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -35,9 +36,7 @@ export function CompanyGate({ children }: { children: ReactNode }) {
     <div className="grid min-h-screen place-items-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand text-brand-foreground shadow-soft">
-            <span className="font-display text-sm font-bold">P</span>
-          </div>
+          <Logo className="h-11 w-11" />
           <div>
             <h1 className="font-display text-lg font-semibold">Create your company</h1>
             <p className="text-xs text-muted-foreground">Your team’s shared workspace</p>

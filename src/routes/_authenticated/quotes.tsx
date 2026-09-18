@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Printer, Copy, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { Logo } from "@/components/logo";
 import { useProjects } from "@/components/projects/projects-store";
 import { supabase } from "@/integrations/supabase/client";
 import { CURRENCIES, formatDate, lineTotal, money, quoteTotals, type QuoteItem } from "@/lib/money";
@@ -510,6 +511,7 @@ function QuotesPage() {
           <section className="print-area rounded-2xl border border-border bg-card p-8 text-sm">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
+                <Logo plain className="mb-3 h-14 w-auto max-w-[160px]" />
                 <p className="font-display text-2xl font-semibold tracking-tight">
                   {companyName || "PRISIM"}
                 </p>
