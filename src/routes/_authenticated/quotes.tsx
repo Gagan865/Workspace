@@ -577,7 +577,7 @@ function QuotesPage() {
           <section className="print-area rounded-2xl border border-neutral-200 bg-white p-8 text-sm text-neutral-900">
             <div className="relative">
               <Logo plain className="absolute right-0 top-0 h-24 w-auto" />
-              <div className="pr-24 text-center">
+              <div className="text-center">
                 <h2 className="font-display text-3xl font-bold tracking-tight">
                   {companyName || "PRISIM"}
                 </h2>
