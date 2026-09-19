@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 export type Activity = {
   id: string;
   actorId: string;
@@ -32,15 +30,9 @@ export function mapActivity(r: ActivityRow): Activity {
   };
 }
 
-// Fire-and-forget: record a company activity. company_id and actor_id default
-// server-side (current company + auth.uid()).
-export function logActivity(a: {
+export type ActivityInput = {
   action: string;
   entity: string;
   summary: string;
   projectId?: string | null;
-}) {
-  void supabase
-    .from("activity")
-    .insert({ action: a.action, entity: a.entity, summary: a.summary, project_id: a.projectId ?? null });
-}
+};

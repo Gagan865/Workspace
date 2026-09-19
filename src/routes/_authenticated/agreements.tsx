@@ -3,7 +3,6 @@ import { Plus, Printer } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { useProjects } from "@/components/projects/projects-store";
-import { logActivity } from "@/lib/activity";
 import { supabase } from "@/integrations/supabase/client";
 import { CURRENCIES, formatDate, money } from "@/lib/money";
 
@@ -66,7 +65,7 @@ const field =
 const labelCls = "block text-xs font-medium text-muted-foreground";
 
 function AgreementsPage() {
-  const { projects } = useProjects();
+  const { projects, logActivity } = useProjects();
   const [list, setList] = useState<Agreement[]>([]);
   const [current, setCurrent] = useState<Agreement | null>(null);
   const [status, setStatus] = useState("");

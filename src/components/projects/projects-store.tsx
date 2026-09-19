@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { logActivity, mapActivity, type Activity } from "@/lib/activity";
+import { mapActivity, type Activity, type ActivityInput } from "@/lib/activity";
 import { armAudio, playChime } from "@/lib/chime";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -45,6 +45,7 @@ type Store = {
   unreadCount: number;
   myUserId: string | null;
   markNotificationsSeen: () => void;
+  logActivity: (a: ActivityInput) => Promise<void>;
   createCompany: (name: string) => Promise<void>;
   renameCompany: (name: string) => Promise<void>;
   addProject: (name: string, kind?: ProjectKind) => Promise<Project | null>;
@@ -85,6 +86,27 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     membersRef.current = members;
   }, [members]);
+
+  // Insert an activity row and optimistically show it in the feed right away
+  // (realtime also echoes it to everyone, incl. us — deduped by id).
+  const pushActivity = useCallback(async (a: ActivityInput) => {
+    const { data } = await supabase
+      .from("activity")
+      .insert({
+        action: a.action,
+        entity: a.entity,
+        summary: a.summary,
+        project_id: a.projectId ?? null,
+      })
+      .select()
+      .single();
+    if (data) {
+      const act = mapActivity(data);
+      setNotifications((prev) =>
+        prev.some((x) => x.id === act.id) ? prev : [act, ...prev].slice(0, 200),
+      );
+    }
+  }, []);
 
   const load = useCallback(async () => {
     const { data: userData } = await supabase.auth.getUser();
@@ -266,6 +288,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       unreadCount,
       myUserId,
       markNotificationsSeen: () => setUnreadCount(0),
+      logActivity: pushActivity,
       refresh: async () => {
         await load();
       },
@@ -304,7 +327,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             .map((s) => ({ id: s.id, label: s.label })),
         };
         setProjects((prev) => [...prev, project]);
-        logActivity({
+        void pushActivity({
           action: "created",
           entity: "project",
           summary: `created the project “${project.name}”`,
@@ -330,7 +353,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
           .from("lead_counts")
           .upsert({ project_id: projectId, day, count }, { onConflict: "project_id,day" });
         const pname = projects.find((p) => p.id === projectId)?.name ?? "a project";
-        logActivity({
+        void pushActivity({
           action: "updated",
           entity: "lead",
           summary: `updated leads for “${pname}” (${count} today)`,
@@ -346,7 +369,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         setProjects((prev) => prev.filter((p) => p.id !== id));
         setTasks((prev) => prev.filter((t) => t.projectId !== id));
         await supabase.from("projects").delete().eq("id", id);
-        logActivity({ action: "deleted", entity: "project", summary: `deleted the project “${name}”` });
+        void pushActivity({ action: "deleted", entity: "project", summary: `deleted the project “${name}”` });
       },
       setProjectStages: async (id, stages, removedStageId) => {
         const project = projects.find((p) => p.id === id);
@@ -393,7 +416,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
           title: invite.title,
           color_id: invite.colorId,
         });
-        logActivity({
+        void pushActivity({
           action: "invited",
           entity: "member",
           summary: `invited ${invite.email.trim().toLowerCase()} to the team`,
@@ -411,14 +434,14 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         const gone = members.find((m) => m.id === id)?.name ?? "a teammate";
         await supabase.from("tasks").update({ member_id: null }).eq("member_id", id);
         await supabase.from("company_members").delete().eq("id", id);
-        logActivity({ action: "removed", entity: "member", summary: `removed ${gone} from the team` });
+        void pushActivity({ action: "removed", entity: "member", summary: `removed ${gone} from the team` });
       },
       setMemberRole: async (id, role) => {
         // Owner-only, enforced by the set_member_role RPC. Setting 'owner'
         // transfers ownership and demotes the current owner.
         const who = members.find((m) => m.id === id)?.name ?? "a teammate";
         await supabase.rpc("set_member_role", { p_member_id: id, p_role: role });
-        logActivity({
+        void pushActivity({
           action: "updated",
           entity: "member",
           summary: role === "owner" ? `made ${who} the owner` : `set ${who}'s access to ${role}`,
@@ -450,7 +473,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             ),
           );
           await supabase.from("tasks").update(payload).eq("id", task.id);
-          logActivity({
+          void pushActivity({
             action: "updated",
             entity: "task",
             summary: `updated the task “${task.title}”`,
@@ -460,7 +483,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
           const { data } = await supabase.from("tasks").insert(payload).select().single();
           if (data) {
             setTasks((prev) => [...prev, { ...task, id: data.id, lastUpdateAt: data.last_update_at }]);
-            logActivity({
+            void pushActivity({
               action: "created",
               entity: "task",
               summary: `added the task “${task.title}”`,
@@ -477,7 +500,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         const task = tasks.find((t) => t.id === id);
         setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, stageId } : t)));
         await supabase.from("tasks").update({ stage_id: stageId }).eq("id", id);
-        logActivity({
+        void pushActivity({
           action: "moved",
           entity: "task",
           summary: task ? `moved the task “${task.title}” on the board` : `moved a task on the board`,
@@ -490,7 +513,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, lastUpdateAt: now } : t)));
         await supabase.from("task_updates").insert({ task_id: taskId, note });
         await supabase.from("tasks").update({ last_update_at: now }).eq("id", taskId);
-        logActivity({
+        void pushActivity({
           action: "updated",
           entity: "task",
           summary: task ? `posted an update on “${task.title}”` : `posted a task update`,
@@ -500,7 +523,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       freeColorId: () =>
         nextColorId([...members.map((m) => m.colorId), ...invites.map((i) => i.colorId)]),
     }),
-    [ready, companyId, companyName, myRole, isAdmin, isOwner, projects, members, invites, tasks, leadDays, notifications, unreadCount, myUserId, load],
+    [ready, companyId, companyName, myRole, isAdmin, isOwner, projects, members, invites, tasks, leadDays, notifications, unreadCount, myUserId, pushActivity, load],
   );
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;

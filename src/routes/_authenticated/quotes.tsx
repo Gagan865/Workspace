@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Logo } from "@/components/logo";
 import { useProjects } from "@/components/projects/projects-store";
-import { logActivity } from "@/lib/activity";
 import { supabase } from "@/integrations/supabase/client";
 import { CURRENCIES, formatDate } from "@/lib/money";
 
@@ -69,7 +68,7 @@ const labelCls = "block text-xs font-medium text-muted-foreground";
 const tmpId = () => `tmp-${Math.random().toString(36).slice(2, 9)}`;
 
 function QuotesPage() {
-  const { addProject, refresh, companyName } = useProjects();
+  const { addProject, refresh, companyName, logActivity } = useProjects();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [current, setCurrent] = useState<Quote | null>(null);
