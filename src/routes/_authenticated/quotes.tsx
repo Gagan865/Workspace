@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Logo } from "@/components/logo";
 import { useProjects } from "@/components/projects/projects-store";
+import { logActivity } from "@/lib/activity";
 import { supabase } from "@/integrations/supabase/client";
 import { CURRENCIES, formatDate } from "@/lib/money";
 
@@ -176,6 +177,12 @@ function QuotesPage() {
         })),
       );
     }
+
+    logActivity({
+      action: "saved",
+      entity: "quote",
+      summary: `saved the quotation ${current.number}`,
+    });
 
     if (current.status === "accepted" && !current.project_id) {
       const project = await addProject(

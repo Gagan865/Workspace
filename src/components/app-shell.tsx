@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
+  Bell,
   CalendarCheck,
   CalendarDays,
   FileSignature,
@@ -28,6 +29,7 @@ const NAV = [
   { to: "/agreements", label: "Agreements", hint: "Contracts & terms", icon: FileSignature },
   { to: "/money", label: "Money", hint: "Payments & collection", icon: Wallet },
   { to: "/reports", label: "Reports", hint: "Owner overview", icon: BarChart3 },
+  { to: "/notifications", label: "Notifications", hint: "Team activity", icon: Bell },
   { to: "/calendar", label: "Calendar", hint: "Due dates & reminders", icon: CalendarDays },
   { to: "/planner", label: "Personal Planner", hint: "Daily journal", icon: CalendarCheck },
   { to: "/settings", label: "Settings", hint: "Reminders & account", icon: Settings },
@@ -37,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [newProject, setNewProject] = useState("");
   const [newKind, setNewKind] = useState<ProjectKind>("business");
-  const { projects, addProject, isAdmin } = useProjects();
+  const { projects, addProject, isAdmin, unreadCount } = useProjects();
   const navigate = useNavigate();
   const { mode, toggleMode, accent, setAccent } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -86,6 +88,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <span className="block truncate text-[11px] text-muted-foreground">
                         {item.hint}
                       </span>
+                    </span>
+                  )}
+                  {item.to === "/notifications" && unreadCount > 0 && (
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full bg-brand text-center text-brand-foreground",
+                        collapsed
+                          ? "h-2 w-2"
+                          : "ml-auto min-w-5 px-1.5 py-0.5 text-[10px] font-semibold",
+                      )}
+                    >
+                      {collapsed ? "" : unreadCount}
                     </span>
                   )}
                   {!collapsed && active && <span className="h-1.5 w-1.5 rounded-full bg-brand" />}

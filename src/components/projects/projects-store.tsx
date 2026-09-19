@@ -4,15 +4,19 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
+import { logActivity, mapActivity, type Activity } from "@/lib/activity";
+import { armAudio, playChime } from "@/lib/chime";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
   defaultStages,
   nextColorId,
+  PERSON_COLORS,
   type Invite,
   type LeadDay,
   type Member,
@@ -37,6 +41,10 @@ type Store = {
   invites: Invite[];
   tasks: Task[];
   leadDays: LeadDay[];
+  notifications: Activity[];
+  unreadCount: number;
+  myUserId: string | null;
+  markNotificationsSeen: () => void;
   createCompany: (name: string) => Promise<void>;
   renameCompany: (name: string) => Promise<void>;
   addProject: (name: string, kind?: ProjectKind) => Promise<Project | null>;
@@ -70,11 +78,19 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [leadDays, setLeadDays] = useState<LeadDay[]>([]);
+  const [notifications, setNotifications] = useState<Activity[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const membersRef = useRef<Member[]>([]);
+  useEffect(() => {
+    membersRef.current = members;
+  }, [members]);
 
   const load = useCallback(async () => {
     const { data: userData } = await supabase.auth.getUser();
     const myId = userData.user?.id;
     if (!myId) return;
+    setMyUserId(myId);
 
     // Pick up any invitation issued to this email while I already had an account.
     await supabase.rpc("accept_invitations");
@@ -89,6 +105,8 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       setInvites([]);
       setTasks([]);
       setLeadDays([]);
+      setNotifications([]);
+      setUnreadCount(0);
       return;
     }
 
@@ -96,7 +114,8 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     setCompanyId(cid);
     setMyRole((memberRows.find((m) => m.user_id === myId)?.role ?? null) as TeamRole | null);
 
-    const [companyRes, profileRes, inviteRes, projectRes, stageRes, taskRes, leadRes] = await Promise.all([
+    const [companyRes, profileRes, inviteRes, projectRes, stageRes, taskRes, leadRes, activityRes] =
+      await Promise.all([
       supabase.from("companies").select("*").eq("id", cid).maybeSingle(),
       supabase
         .from("profiles")
@@ -107,6 +126,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       supabase.from("stages").select("*").order("position"),
       supabase.from("tasks").select("*").order("created_at"),
       supabase.from("lead_counts").select("*").order("day"),
+      supabase.from("activity").select("*").order("created_at", { ascending: false }).limit(100),
     ]);
 
     setCompanyName(companyRes.data?.name ?? "");
@@ -156,6 +176,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         count: Number(l.count),
       })),
     );
+    setNotifications((activityRes.data ?? []).map((a) => mapActivity(a)));
     setTasks(
       (taskRes.data ?? []).map((t) => ({
         id: t.id,
@@ -188,6 +209,42 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     };
   }, [load]);
 
+  useEffect(() => {
+    armAudio();
+  }, []);
+
+  // Live notifications: play the actor's chime and bump the unread badge.
+  useEffect(() => {
+    if (!companyId) return;
+    const channel = supabase
+      .channel(`activity-${companyId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "activity",
+          filter: `company_id=eq.${companyId}`,
+        },
+        (payload) => {
+          const a = mapActivity(payload.new as Parameters<typeof mapActivity>[0]);
+          setNotifications((prev) =>
+            prev.some((x) => x.id === a.id) ? prev : [a, ...prev].slice(0, 200),
+          );
+          if (a.actorId !== myUserId) {
+            setUnreadCount((n) => n + 1);
+            const member = membersRef.current.find((m) => m.userId === a.actorId);
+            const seed = member ? PERSON_COLORS.findIndex((c) => c.id === member.colorId) + 1 : 1;
+            playChime(seed);
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [companyId, myUserId]);
+
   const isAdmin = myRole === "owner" || myRole === "manager";
   const isOwner = myRole === "owner";
 
@@ -205,6 +262,10 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       invites,
       tasks,
       leadDays,
+      notifications,
+      unreadCount,
+      myUserId,
+      markNotificationsSeen: () => setUnreadCount(0),
       refresh: async () => {
         await load();
       },
@@ -243,6 +304,12 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             .map((s) => ({ id: s.id, label: s.label })),
         };
         setProjects((prev) => [...prev, project]);
+        logActivity({
+          action: "created",
+          entity: "project",
+          summary: `created the project “${project.name}”`,
+          projectId: project.id,
+        });
         return project;
       },
       setProjectKind: async (id, kind) => {
@@ -262,15 +329,24 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         await supabase
           .from("lead_counts")
           .upsert({ project_id: projectId, day, count }, { onConflict: "project_id,day" });
+        const pname = projects.find((p) => p.id === projectId)?.name ?? "a project";
+        logActivity({
+          action: "updated",
+          entity: "lead",
+          summary: `updated leads for “${pname}” (${count} today)`,
+          projectId,
+        });
       },
       renameProject: async (id, name) => {
         setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
         await supabase.from("projects").update({ name }).eq("id", id);
       },
       removeProject: async (id) => {
+        const name = projects.find((p) => p.id === id)?.name ?? "a project";
         setProjects((prev) => prev.filter((p) => p.id !== id));
         setTasks((prev) => prev.filter((t) => t.projectId !== id));
         await supabase.from("projects").delete().eq("id", id);
+        logActivity({ action: "deleted", entity: "project", summary: `deleted the project “${name}”` });
       },
       setProjectStages: async (id, stages, removedStageId) => {
         const project = projects.find((p) => p.id === id);
@@ -317,6 +393,11 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
           title: invite.title,
           color_id: invite.colorId,
         });
+        logActivity({
+          action: "invited",
+          entity: "member",
+          summary: `invited ${invite.email.trim().toLowerCase()} to the team`,
+        });
         await load();
       },
       cancelInvite: async (id) => {
@@ -327,13 +408,21 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         // Unassign this person's tasks, then remove their membership (admin only, per RLS).
         setMembers((prev) => prev.filter((m) => m.id !== id));
         setTasks((prev) => prev.map((t) => (t.ownerId === id ? { ...t, ownerId: "" } : t)));
+        const gone = members.find((m) => m.id === id)?.name ?? "a teammate";
         await supabase.from("tasks").update({ member_id: null }).eq("member_id", id);
         await supabase.from("company_members").delete().eq("id", id);
+        logActivity({ action: "removed", entity: "member", summary: `removed ${gone} from the team` });
       },
       setMemberRole: async (id, role) => {
         // Owner-only, enforced by the set_member_role RPC. Setting 'owner'
         // transfers ownership and demotes the current owner.
+        const who = members.find((m) => m.id === id)?.name ?? "a teammate";
         await supabase.rpc("set_member_role", { p_member_id: id, p_role: role });
+        logActivity({
+          action: "updated",
+          entity: "member",
+          summary: role === "owner" ? `made ${who} the owner` : `set ${who}'s access to ${role}`,
+        });
         await load();
       },
       setMemberColor: async (id, colorId) => {
@@ -361,10 +450,22 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             ),
           );
           await supabase.from("tasks").update(payload).eq("id", task.id);
+          logActivity({
+            action: "updated",
+            entity: "task",
+            summary: `updated the task “${task.title}”`,
+            projectId: task.projectId,
+          });
         } else {
           const { data } = await supabase.from("tasks").insert(payload).select().single();
           if (data) {
             setTasks((prev) => [...prev, { ...task, id: data.id, lastUpdateAt: data.last_update_at }]);
+            logActivity({
+              action: "created",
+              entity: "task",
+              summary: `added the task “${task.title}”`,
+              projectId: task.projectId,
+            });
           }
         }
       },
@@ -373,19 +474,33 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         await supabase.from("tasks").delete().eq("id", id);
       },
       moveTask: async (id, stageId) => {
+        const task = tasks.find((t) => t.id === id);
         setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, stageId } : t)));
         await supabase.from("tasks").update({ stage_id: stageId }).eq("id", id);
+        logActivity({
+          action: "moved",
+          entity: "task",
+          summary: task ? `moved the task “${task.title}” on the board` : `moved a task on the board`,
+          projectId: task?.projectId ?? null,
+        });
       },
       logTaskUpdate: async (taskId, note) => {
         const now = new Date().toISOString();
+        const task = tasks.find((t) => t.id === taskId);
         setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, lastUpdateAt: now } : t)));
         await supabase.from("task_updates").insert({ task_id: taskId, note });
         await supabase.from("tasks").update({ last_update_at: now }).eq("id", taskId);
+        logActivity({
+          action: "updated",
+          entity: "task",
+          summary: task ? `posted an update on “${task.title}”` : `posted a task update`,
+          projectId: task?.projectId ?? null,
+        });
       },
       freeColorId: () =>
         nextColorId([...members.map((m) => m.colorId), ...invites.map((i) => i.colorId)]),
     }),
-    [ready, companyId, companyName, myRole, isAdmin, isOwner, projects, members, invites, tasks, leadDays, load],
+    [ready, companyId, companyName, myRole, isAdmin, isOwner, projects, members, invites, tasks, leadDays, notifications, unreadCount, myUserId, load],
   );
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;

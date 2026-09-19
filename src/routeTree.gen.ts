@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAgreementsRouteImport } from './routes/_authenticated/agreements'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedMoneyRouteImport } from './routes/_authenticated/money'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedPlannerRouteImport } from './routes/_authenticated/planner'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated/quotes'
@@ -52,6 +53,12 @@ const AuthenticatedMoneyRoute = AuthenticatedMoneyRouteImport.update({
   path: '/money',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPlannerRoute = AuthenticatedPlannerRouteImport.update({
   id: '/planner',
   path: '/planner',
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/agreements': typeof AuthenticatedAgreementsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/money': typeof AuthenticatedMoneyRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/planner': typeof AuthenticatedPlannerRoute
   '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/quotes': typeof AuthenticatedQuotesRoute
@@ -110,6 +118,7 @@ export interface FileRoutesByTo {
   '/agreements': typeof AuthenticatedAgreementsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/money': typeof AuthenticatedMoneyRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/planner': typeof AuthenticatedPlannerRoute
   '/quotes': typeof AuthenticatedQuotesRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -125,6 +134,7 @@ export interface FileRoutesById {
   '/_authenticated/agreements': typeof AuthenticatedAgreementsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/money': typeof AuthenticatedMoneyRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/planner': typeof AuthenticatedPlannerRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/agreements'
     | '/calendar'
     | '/money'
+    | '/notifications'
     | '/planner'
     | '/projects'
     | '/quotes'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/agreements'
     | '/calendar'
     | '/money'
+    | '/notifications'
     | '/planner'
     | '/quotes'
     | '/reports'
@@ -169,6 +181,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agreements'
     | '/_authenticated/calendar'
     | '/_authenticated/money'
+    | '/_authenticated/notifications'
     | '/_authenticated/planner'
     | '/_authenticated/projects'
     | '/_authenticated/quotes'
@@ -226,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/money'
       fullPath: '/money'
       preLoaderRoute: typeof AuthenticatedMoneyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/planner': {
@@ -299,6 +319,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgreementsRoute: typeof AuthenticatedAgreementsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedMoneyRoute: typeof AuthenticatedMoneyRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedPlannerRoute: typeof AuthenticatedPlannerRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
   AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
@@ -310,6 +331,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgreementsRoute: AuthenticatedAgreementsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedMoneyRoute: AuthenticatedMoneyRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedPlannerRoute: AuthenticatedPlannerRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
   AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,

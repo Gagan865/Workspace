@@ -3,6 +3,7 @@ import { Plus, Printer } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { useProjects } from "@/components/projects/projects-store";
+import { logActivity } from "@/lib/activity";
 import { supabase } from "@/integrations/supabase/client";
 import { CURRENCIES, formatDate, money } from "@/lib/money";
 
@@ -143,6 +144,11 @@ function AgreementsPage() {
         project_id: current.project_id,
       })
       .eq("id", current.id);
+    logActivity({
+      action: "updated",
+      entity: "agreement",
+      summary: `updated the agreement “${current.title || "Untitled"}”`,
+    });
     setStatus("Saved.");
     await load(current.id);
   };
