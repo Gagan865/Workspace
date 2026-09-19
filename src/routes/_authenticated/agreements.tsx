@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useProjects } from "@/components/projects/projects-store";
 import { supabase } from "@/integrations/supabase/client";
-import { CURRENCIES, formatDate, money } from "@/lib/money";
+import { CURRENCIES, currencyLabel, formatDate, money } from "@/lib/money";
 
 export const Route = createFileRoute("/_authenticated/agreements")({
   head: () => ({
@@ -290,7 +290,9 @@ function AgreementsPage() {
                   onChange={(e) => patch({ currency: e.target.value })}
                 >
                   {CURRENCIES.map((c) => (
-                    <option key={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {currencyLabel(c)}
+                    </option>
                   ))}
                 </select>
               </label>

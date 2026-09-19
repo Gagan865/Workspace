@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { useProjects } from "@/components/projects/projects-store";
 import { supabase } from "@/integrations/supabase/client";
-import { CURRENCIES, formatDate } from "@/lib/money";
+import { CURRENCIES, currencyLabel, formatDate } from "@/lib/money";
 
 export const Route = createFileRoute("/_authenticated/quotes")({
   head: () => ({
@@ -317,7 +317,9 @@ function QuotesPage() {
                   onChange={(e) => patch({ currency: e.target.value })}
                 >
                   {CURRENCIES.map((c) => (
-                    <option key={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {currencyLabel(c)}
+                    </option>
                   ))}
                 </select>
               </label>

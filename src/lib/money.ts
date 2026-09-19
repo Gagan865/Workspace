@@ -1,5 +1,20 @@
 export const CURRENCIES = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "ZAR", "AED"] as const;
 
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  INR: "₹",
+  AUD: "A$",
+  CAD: "C$",
+  ZAR: "R",
+  AED: "د.إ",
+};
+
+// e.g. "INR (₹)" for the currency dropdown.
+export const currencyLabel = (code: string) =>
+  CURRENCY_SYMBOLS[code] ? `${code} (${CURRENCY_SYMBOLS[code]})` : code;
+
 export type QuoteItem = {
   id: string;
   description: string;
