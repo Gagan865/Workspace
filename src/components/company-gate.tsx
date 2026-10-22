@@ -1,15 +1,19 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Logo } from "@/components/logo";
 import { useProjects } from "@/components/projects/projects-store";
 import { supabase } from "@/integrations/supabase/client";
 
-// Blocks the workspace until the signed-in user belongs to a company. Invited
-// teammates auto-join on sign-in, so this only appears for someone starting fresh.
+// Invite-only: a signed-in user who hasn't been invited to a workspace can't
+// create their own — they wait for an invite. Invited users auto-join on sign-in.
 export function CompanyGate({ children }: { children: ReactNode }) {
-  const { ready, hasCompany, createCompany } = useProjects();
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { ready, hasCompany, refresh } = useProjects();
+  const [email, setEmail] = useState("");
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+  }, []);
 
   if (!ready) {
     return (
@@ -21,14 +25,12 @@ export function CompanyGate({ children }: { children: ReactNode }) {
 
   if (hasCompany) return <>{children}</>;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || busy) return;
-    setBusy(true);
+  const checkAgain = async () => {
+    setChecking(true);
     try {
-      await createCompany(name.trim());
+      await refresh();
     } finally {
-      setBusy(false);
+      setChecking(false);
     }
   };
 
@@ -38,35 +40,28 @@ export function CompanyGate({ children }: { children: ReactNode }) {
         <div className="mb-8 flex items-center gap-3">
           <Logo className="h-11 w-11" />
           <div>
-            <h1 className="font-display text-lg font-semibold">Create your company</h1>
-            <p className="text-xs text-muted-foreground">Your team’s shared workspace</p>
+            <h1 className="font-display text-lg font-semibold">You’re not in a workspace yet</h1>
+            <p className="text-xs text-muted-foreground">Joining is invite-only</p>
           </div>
         </div>
 
-        <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-          <label className="block text-xs font-medium text-muted-foreground">
-            Company name
-            <input
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Acme Co"
-              className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-brand"
-            />
-          </label>
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <p className="text-sm text-foreground">
+            Ask your workspace owner to invite{" "}
+            {email ? <span className="font-medium">{email}</span> : "your email"} from{" "}
+            <span className="whitespace-nowrap">Settings → Team</span>. Once they do, come back here
+            and check again — you’ll land straight in their workspace.
+          </p>
+
           <button
-            type="submit"
-            disabled={busy || !name.trim()}
+            type="button"
+            onClick={checkAgain}
+            disabled={checking}
             className="mt-4 w-full rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {busy ? "Creating…" : "Create company"}
+            {checking ? "Checking…" : "I’ve been invited — check again"}
           </button>
-
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Were you invited? Ask your admin to add your email, then sign in with it — you’ll land
-            straight in their company.
-          </p>
-        </form>
+        </div>
 
         <button
           type="button"
